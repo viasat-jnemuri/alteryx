@@ -1,2 +1,2 @@
-# alteryx
-everything about alteryx
+# OpenSourceRepoTemplate
+OpenSourceRepoTemplate

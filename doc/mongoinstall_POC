@@ -1,0 +1,337 @@
+
+brew update && brew install azure-cli
+
+
+az cloud set --name AzureCloud  
+
+az login
+
+az ssh vm --ip 10.106.103.10
+
+
+### --- Installation of the MongoDB database 4.0 version to be compatible to the Alteryz Controller
+
+
+
+
+
+
+az ssh vm --ip 10.106.103.10
+
+
+sudo chown -R $(whoami) /usr/local/share/
+
+
+chmod u+w /usr/local/share/
+
+
+
+sudo service mongod stop
+sudo apt-get purge mongodb-org*
+sudo rm -r /var/log/mongodb
+sudo rm -r /var/lib/mongodb
+
+sudo apt-get remove mongodb* --purge
+
+
+
+az ssh vm --ip 10.106.103.10
+
+
+sudo su
+
+apt-get update
+
+apt-get install ssh
+
+sudo apt install dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+
+
+sudo wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+
+
+cd /etc/apt/sources.list.d/
+
+sudo apt-get update
+
+sudo apt-key list | \
+ grep "expired: " | \
+ sed -ne 's|pub .*/\([^ ]*\) .*|\1|gp' | \
+ xargs -n1 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys
+
+#sudo userdel -r mongodb
+#sudo groupdel mongodb
+#sudo adduser mongodb
+#sudo groupadd mongodb
+#useradd -G mongodb mongodb
+
+sudo apt-get update # to update newly listed mongodb 4.0 
+
+sudo apt install mongodb-org -y
+mongod --version
+
+
+
+sudo apt-get install libssl1.0-dev
+
+sudo apt-get update 
+
+sudo chown -R mongodb:mongodb /var/lib/mongodb
+sudo chown -R mongodb:mongodb /var/log/mongodb
+
+
+sudo chown mongodb:mongodb /tmp/mongodb-27017.sock
+chmod u+x /tmp/mongodb-27017.sock
+
+sudo apt-get update
+
+sudo rm -rf /tmp/mongodb-27017.sock
+sudo service mongod start
+
+sudo su
+
+sudo systemctl stop mongod
+sudo systemctl start mongod
+sudo systemctl enable mongod
+sudo systemctl status mongod
+
+
+
+sudo systemctl stop mongod
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+sudo mkdir /data/db/
+
+sudo chown -R mongodb:mongodb /data/db
+
+mongo --eval 'db.runCommand({ connectionStatus: 1 })'
+
+sudo vi /etc/mongod.conf
+
+# network interfaces
+net:
+  port: 27017
+  #bindIp: 127.0.0.1,10.106.103.10
+  bindIpAll: true
+
+#security:
+security:
+  authorization: enabled
+
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+sudo chown {username} /data/db
+
+
+
+netstat -an | grep 27017
+
+
+`root@vmgtmongodb1dev:/#` 
+
+mongosh
+
+ use admin
+
+ db.createUser(
+  {
+    user: "mongoAdmin",
+    pwd: "mongoAdmin123",
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" }]
+ }
+)
+
+use admin;
+db.grantRolesToUser('mongoAdmin', [{ role: 'root', db: 'admin' }])
+
+db.auth( "mongoAdmin", '1Mq0zAd9#qTN' )
+
+
+db.getCollectionNames()
+
+
+use AlteryxService
+
+ db.createUser( { user: "alteryxController", pwd: "alteryxController123", roles: [ "readWrite"]} )
+
+
+ use AlteryxGallery
+
+ db.createUser( { user: "alteryxController", pwd: "alteryxController123", roles: [ "readWrite" ]} )
+
+
+
+use AlteryxGallery_Lucene
+
+ db.createUser( { user: "alteryxController", pwd: "alteryxController123", roles: [ "readWrite" ]} )
+
+
+
+
+
+
+db.dropUser("alteryxController")
+
+mongosh -u mongoAdmin -p --authenticationDatabase admin
+
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxService
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxGallery
+
+
+
+mongorestore -u alteryxController -password  --authenticationDatabase --db AlteryxService  /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+$mongorestore --host databasehost:12345 --username restoreuser --password restorepwd --authenticationDatabase admin --db targetdb ./path/to/dump/
+
+
+mongodb://alteryxController:6!i43YNji7Af@10.106.103.9:27017/?authSource=AlteryxService&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false
+
+
+mongodb://AlteryxController:6!i43YNji7Af@10.106.103.9:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false
+
+
+mongo -u alteryxController  10.106.103.10:27017/AlteryxService
+
+mongod 10.106.103.10:27017/AlteryxService -u alteryxController -p 6!i43YNji7Af
+
+
+`root@vmgtmongodb1dev:/#` mongosh
+
+show dbs
+
+
+
+
+ip a |grep inet
+
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# Where and how to store data.
+storage:
+  dbPath: /data/db
+  journal:
+    enabled: true
+#  engine:
+#  wiredTiger:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- scp  10.109.32.4:gt_alteryx_private_share_dev/mongodb_backup /data/db/
+
+mount -v -t nfs 10.109.32.4:/gt_alteryx_private_share_prod/mongodb_backup /mnt/gt_alteryx_private_share_prod
+
+mongorestore --host=10.109.32.4  -u "c_joseph.nemuri@viasat.com" -p "Winter2#221234"  --db AlteryxService /data/db/ --authenticationDatabase "admin"
+
+sudo ufw allow 80
+
+az ssh vm --ip 10.106.103.10
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxService
+
+mongorestore --port 27017 --db AlteryxService  /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+lsof +D ./ | awk '{print $2}' | tail -n +2 | xargs -r kill -9
+
+root@vmgtmongodb1dev:/mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService# 
+
+sudo mongorestore --db AlteryxService --nsExclude 'test.*1' /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+mongorestore --db AlteryxService --dbpath /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/ --nsInclude="*"
+
+mongorestore -u alteryxController -p 6!i43YNji7Af --authenticationDatabase admin -d AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+mongorestore --nsInclude 'AlteryxService.*' --drop /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+sudo mongorestore --db AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxGallery/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery_Lucene /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/admin/ --nsExclude="test.*"
+
+
+sudo systemctl stop mongod
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+mongorestore -d  AlteryxService /home/c_joseph.nemuri/mongodb_backup/mongodb_backup/AlteryxService/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery /home/c_joseph.nemuri/mongodb_backup/mongodb_backup/AlteryxGallery/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery_Lucene /home/c_joseph.nemuri/mongodb_backup/mongodb_backup/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore -d  admin /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/admin/ --nsExclude="test.*"
+
+Add to hostfile
+
+# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+10.106.103.10     gt-alteryx-controller.viasat-gt-dev.az.viasat.com
+
+
+root@vmgtmongodb1dev:/etc# mongo --host=gt-alteryx-controller.viasat-gt-dev.az.viasat.com
+MongoDB shell version v5.0.14
+connecting to: mongodb://gt-alteryx-controller.viasat-gt-dev.az.viasat.com:27017/?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("fe9ac8c4-0cca-4886-aa9a-7dbf0629d260") }
+MongoDB server version: 5.0.14
+================
+Warning: the "mongo" shell has been superseded by "mongosh",
+which delivers improved usability and compatibility.The "mongo" shell has been deprecated and will be removed in
+an upcoming release.
+For installation instructions, see
+https://docs.mongodb.com/mongodb-shell/install/
+================
+---
+The server generated these startup warnings when booting: 
+        2023-02-01T05:33:46.235+00:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+        2023-02-01T05:33:47.237+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+---
+---
+        Enable MongoDBs free cloud-based monitoring service, which will then receive and display
+        metrics about your deployment (disk utilization, CPU, operation statistics, etc).
+
+        The monitoring data will be available on a MongoDB website with a unique URL accessible to you
+        and anyone you share the URL with. MongoDB may use this information to make product
+        improvements and to suggest MongoDB products and deployment options to you.
+
+        To enable free monitoring, run the following command: db.enableFreeMonitoring()
+        To permanently disable this reminder, run the following command: db.disableFreeMonitoring()
+---
+
+
+extract-mongo-schema -d -u mongoAdmin "mongodb://localhost:27017/" -o schema.xlsx -f xlsx
+
+
+"collectionName:fieldName"

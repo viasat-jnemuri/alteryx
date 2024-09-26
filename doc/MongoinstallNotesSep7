@@ -1,0 +1,430 @@
+
+### --- Installation of the MongoDB database 4.0 version to be compatible to the Alteryz Controller
+
+
+brew update && brew install azure-cli
+
+
+az cloud set --name AzureUSGovernment
+#login
+az login
+#set subscription
+az account set --name viasat-gt-gov-prod
+
+
+
+sudo chown -R $(whoami) /usr/local/share/
+chmod u+w /usr/local/share/
+
+
+
+
+sudo service mongod stop
+sudo apt-get purge mongodb-org*
+sudo rm -r /var/log/mongodb
+sudo rm -r /var/lib/mongodb
+
+sudo apt-get remove mongodb* --purge
+
+
+mkdir -p /data/db
+chmod 777 /data/db
+
+sudo su
+
+apt-get update
+
+apt-get install ssh
+
+sudo apt install dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+
+
+sudo wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+
+
+cd /etc/apt/sources.list.d/
+
+sudo apt-get update
+
+sudo apt-key list | \
+ grep "expired: " | \
+ sed -ne 's|pub .*/\([^ ]*\) .*|\1|gp' | \
+ xargs -n1 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys
+
+#sudo userdel -r mongodb
+#sudo groupdel mongodb
+#sudo adduser mongodb
+#sudo groupadd mongodb
+#useradd -G mongodb mongodb
+
+sudo apt-get update # to update newly listed mongodb 4.0 
+
+sudo apt install mongodb-org -y
+mongod --version
+
+
+
+sudo apt-get install libssl1.0-dev
+
+sudo apt-get update 
+
+sudo chown -R mongodb:mongodb /var/lib/mongodb
+sudo chown -R mongodb:mongodb /var/log/mongodb
+
+
+sudo chown mongodb:mongodb /tmp/mongodb-27017.sock
+chmod u+x /tmp/mongodb-27017.sock
+
+sudo apt-get update
+
+sudo rm -rf /tmp/mongodb-27017.sock
+sudo service mongod start
+
+sudo su
+
+sudo systemctl stop mongod
+sudo systemctl start mongod
+sudo systemctl enable mongod
+sudo systemctl status mongod
+
+
+
+sudo systemctl stop mongod
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+sudo mkdir -p /data/db/
+
+
+
+chmod 777 /data/db/ # Try to use correct permissions 
+
+sudo chown -R mongodb:mongodb /data/db
+
+mongo --eval 'db.runCommand({ connectionStatus: 1 })'
+
+sudo vi /etc/mongod.conf
+
+# network interfaces
+net:
+  port: 27017
+  bindIp: 127.0.0.1,10.106.103.10
+
+#security:
+security:
+  authorization: enabled
+
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+sudo chown {username} /data/db
+
+#mongod.service: Main process exited, code=exited, status=100/n/a
+#has to do with /data/db 
+
+netstat -an | grep 27017
+
+
+`root@vmgtmongodb1dev:/#` 
+
+mongosh
+
+ use admin
+
+ db.createUser(
+  {
+    user: "mongoAdmin",
+    pwd: "56QZR^8DqUwTS$",
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" }]
+ }
+)
+
+use admin;
+db.grantRolesToUser('mongoAdmin', [{ role: 'root', db: 'admin' }])
+
+db.auth( "mongoAdmin", '1Mq0zAd9#qTN' )
+db.auth( "mongoAdmin", "56QZR^8DqUwTS$" )
+
+10.106.103.10
+
+use AlteryxService
+
+ db.createUser( { user: "alteryxController", pwd: "9Kx40KAzW8h)Oj", roles: [ "readWrite" ]} )
+
+
+ use AlteryxGallery
+
+  db.createUser( { user: "alteryxController", pwd: "9Kx40KAzW8h)Oj", roles: [ "readWrite"]} )
+
+
+
+use AlteryxGallery_Lucene
+
+  db.createUser( { user: "alteryxController", pwd: "9Kx40KAzW8h)Oj", roles: [ "readWrite" ]} )
+  
+
+
+
+
+db.auth( "mongoAdmin", '56QZR^8DqUwTS$' )
+
+
+db.auth( "mongoAdmin", '1Mq0zAd9#qTN' )
+
+
+
+db.getCollectionNames()
+
+db.dropUser("alteryxController")
+
+mongosh -u mongoAdmin -p --authenticationDatabase admin
+
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxService
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxGallery
+
+mongo mongodb://alteryxController:'9Kx40KAzW8h)Oj'@10.107.3.9:27017/AlteryxService?authSource=AlteryxService
+
+mongo mongodb://alteryxController:'9Kx40KAzW8h)Oj'@10.107.3.9:27017/AlteryxGallery?authSource=AlteryxGallery
+
+mongo mongodb://alteryxController:'9Kx40KAzW8h)Oj'@10.107.3.9:27017/AlteryxGallery_Lucene?authSource=AlteryxGallery_Lucene
+
+`root@vmgtmongodb1dev:/#` mongosh
+
+show dbs
+db.auth( "alteryxController", '9Kx40KAzW8h)Oj' )
+
+
+ip a |grep inet
+
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# Where and how to store data.
+storage:
+  dbPath: /data/db
+  journal:
+    enabled: true
+#  engine:
+#  wiredTiger:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- scp  10.109.32.4:gt_alteryx_private_share_dev/mongodb_backup /data/db/
+
+mount -v -t nfs 10.109.32.4:/gt_alteryx_private_share_prod/mongodb_backup /mnt/gt_alteryx_private_share_prod
+
+mongorestore --host=10.109.32.4  -u "c_joseph.nemuri@viasat.com" -p ""  --db AlteryxService /data/db/ --authenticationDatabase "admin"
+
+sudo ufw allow 80
+
+az ssh vm --ip 10.106.103.10
+
+mongosh -u alteryxController -p --authenticationDatabase AlteryxService
+
+mongorestore --port 27017 --db AlteryxService  /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+lsof +D ./ | awk '{print $2}' | tail -n +2 | xargs -r kill -9
+
+root@vmgtmongodb1dev:/mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService# 
+
+sudo mongorestore --db AlteryxService --nsExclude 'test.*1' /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+mongorestore --db AlteryxService --dbpath /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/ --nsInclude="*"
+
+mongorestore -u alteryxController -p 6!i43YNji7Af --authenticationDatabase admin -d AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+mongorestore --nsInclude 'AlteryxService.*' --drop /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+sudo mongorestore --db AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/
+
+
+
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxService/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxGallery/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery_Lucene /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore  AlteryxService /mnt/gt_alteryx_private_share_dev/Alteryx_Backup/admin/ --nsExclude="test.*"
+
+
+
+sudo chown mongodb:mongodb /tmp/mongodb-27017.sock
+chmod u+x /tmp/mongodb-27017.sock
+
+sudo rm -rf /tmp/mongodb-27017.sock
+
+
+
+sudo systemctl stop mongod
+
+sudo systemctl restart mongod
+
+sudo systemctl status mongod
+
+db.auth( "mongoAdmin", '56QZR^8DqUwTS$' )
+
+
+
+mongorestore -u 'mongoAdmin' -p '56QZR^8DqUwTS$' --authenticationDatabase=admin -d  AlteryxService /mnt/gt_alteryx_landing_prod/mongodb_backup/AlteryxService/ --nsExclude="test.*"
+mongorestore -u 'mongoAdmin' -p '56QZR^8DqUwTS$' --authenticationDatabase=admin -d  AlteryxGallery /mnt/gt_alteryx_landing_prod/mongodb_backup/AlteryxGallery --nsExclude="test.*"
+mongorestore -u 'mongoAdmin' -p '56QZR^8DqUwTS$' --authenticationDatabase=admin -d  AlteryxGallery_Lucene /mnt/gt_alteryx_landing_prod/mongodb_backup/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore -u 'mongoAdmin' -p '56QZR^8DqUwTS$' --authenticationDatabase=admin -d  admin /mnt/gt_alteryx_landing_prod/mongodb_backup/admin/ --nsExclude="test.*"
+
+mongorestore --authenticationDatabase=admin --uri mongodb://mongoAdmin:1Mq0zAd9#qTN@localhost/admin?ssl=false&authSource=admin /backup/mongodb_backup/admin/ --nsExclude="test.*"
+
+
+Add to hostfile
+
+# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+10.106.103.6     gt-alteryx-controller.viasat-gt-dev.az.viasat.com
+
+
+
+
+# encryption
+#restart mongod
+
+#RuntimeSettings
+#
+
+10.109.32.4:/gt_alteryx_private_share_dev /mnt/gt_alteryx_private_share_dev nfs defaults,nofail 0
+
+https://download.oracle.com/otn_software/nt/instantclient/219000/instantclient-odbc-windows.x64-21.9.0.0.0dbru.zip
+
+
+ssh jnemuri@mongodb-1.atg.viasat.io
+
+mongo --username admin --password ZP34SxKuGNhjbqVh --host mongodb-1.atg.viasat.io:27017 --authenticationDatabase "admin"
+# ATG Mongo restore
+mongorestore --drop -d AlteryxService /mnt/gt_alteryx_private_share_prod/mongodb_backup/mongodb_backup_2023_05_19/AlteryxService/ --nsExclude="test.*"
+mongorestore --drop -d  AlteryxGallery /mnt/gt_alteryx_private_share_prod/mongodb_backup/mongodb_backup_2023_05_19/AlteryxGallery/ --nsExclude AlteryxGallery.locks
+mongorestore --drop -d  AlteryxGallery_Lucene /mnt/gt_alteryx_private_share_prod/mongodb_backup/mongodb_backup_2023_05_19/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore --drop -d  AlteryxService /mnt/gt_alteryx_private_share_prod/mongodb_backup/mongodb_backup_2023_05_19/admin/ --nsExclude="test.*"
+
+mongo --username admin --password ZP34SxKuGNhjbqVh --host mongodb-2.atg.viasat.io:27017 --authenticationDatabase "admin"
+
+mongo --username mongoAdmin --password 1Mq0zAd9#qTN --host mongodb-1.atg.viasat.io:27017 --authenticationDatabase "admin"
+
+mongodb://admin:'ZP34SxKuGNhjbqVh'@mongodb-1.atg.viasat.io:27017/AlteryxService?authSource=admin
+# Mongo gt alteryx restore
+mongorestore -d  AlteryxService /mnt/gt_alteryx_private_share_prod/gt-prod-mongo-backup/20230519/AlteryxService/ --nsExclude="test.*"
+mongorestore -d  AlteryxGallery /mnt/gt_alteryx_private_share_prod/gt-prod-mongo-backup/20230519/AlteryxGallery/ --nsExclude AlteryxGallery.locks
+mongorestore -d  AlteryxGallery_Lucene /mnt/gt_alteryx_private_share_prod/gt-prod-mongo-backup/20230519/AlteryxGallery_Lucene/ --nsExclude="test.*"
+mongorestore -d AlteryxService /mnt/gt_alteryx_private_share_prod/gt-prod-mongo-backup/20230519/admin/ --nsExclude="test.*"
+
+
+
+sudo mount -t cifs -o username=jnemuri,domain=hq.corp.viasat.com //10.109.32.4/gt_alteryx_landing_prod /mnt/i
+
+nohup mongodump --out=/mnt/i/mongodb_backup_2023_07_28/ --username admin --password **** --host...--authenticationDatabase "admin" &> /mnt/i/mongodb_backup_2023_07_28/nohup.log &
+
+
+
+mongorestore  -d  AlteryxGallery /mnt/gt_alteryx_private_share_prod/gt-prod-mongo-backup/20230519/AlteryxGallery/ --nsExclude AlteryxGallery.locks
+
+
+mongorestore --drop -d  AlteryxGallery /mnt/gt_alteryx_private_share_prod/mongodb_backup/mongodb_backup_2023_05_19/AlteryxGallery/ --nsExclude AlteryxGallery.locks
+
+
+
+--nsExclude AlteryxGallery.locks
+
+sudo fuser -k 27017/tcp
+
+
+sudo chown mongodb:mongodb /tmp/mongodb-27017.sock
+chmod u+x /tmp/mongodb-27017.sock
+
+sudo rm -rf /tmp/mongodb-27017.sock
+sudo service mongod start
+
+
+sudo systemctl stop mongod
+sudo systemctl start mongod
+sudo systemctl enable mongod
+sudo systemctl status mongod
+
+#mongod.service: Main process exited, code=exited, status=100/n/a
+
+sudo chown -R mongodb:mongodb /var/lib/mongodb/*
+
+ sudo chown -R mongodb:mongodb /data/db
+
+mongodump --out=/mnt/i/mongodb_backup/ --username admin --password **** --host mongodb-1.atg.viasat.io:27017 --authenticationDatabase "admin"
+
+use AlteryxGallery_new
+
+  db.createUser( { user: "alteryxController", pwd: "9Kx40KAzW8h)Oj", roles: [ "readWrite" ]} )
+
+  mongorestore -d  AlteryxService_ATG /mnt/gt_alteryx_landing_prod/mongodb_backup/mongodb_backup_2023_05_05/AlteryxService/ --nsExclude="test.*"
+
+  mongorestore -d  AlteryxGallery_ATG /mnt/gt_alteryx_landing_prod/mongodb_backup/mongodb_backup_2023_05_05/AlteryxGallery/ --nsExclude="test.*"
+
+  mongorestore -d  AlteryxGallery_Lucene_ATG /mnt/gt_alteryx_landing_prod/mongodb_backup/mongodb_backup_2023_05_05/AlteryxGallery_Lucene/ --nsExclude="test.*"
+
+
+
+##REPAIR
+
+sudo rm /var/lib/mongodb/mongod.lock
+sudo mongod --repair 
+sudo service mongodb start
+sudo status mongodb 
+mongo 
+
+
+nohup mongodump --out=/mnt/gt_alteryx_private_share_prod/gt-prod-alteryx/20230519/ &> /mnt/gt_alteryx_private_share_prod/gt-prod-alteryx/nohup.log &
+
+db.locks.find()
+
+db.locks.remove({})
+
+
+
+10.109.32.4:/gt_alteryx_private_share_dev
+
+10.109.32.4:/gt_alteryx_private_share_dev
+
+
+
+
+sudo mount -t cifs -o username=jnemuri,domain=hq.corp.viasat.com //10.109.32.4/gt_alteryx_landing_prod /mnt/gt_alteryx_landing_prod
+
+
+nohup mongodump --out=/mnt/gt_alteryx_landing_prod/gt_mongodb_backup_2023_09_08/ --username mongoAdmin --password 56QZR^8DqUwTS$ --host 10.107.3.9:27017 --authenticationDatabase "admin" &> /mnt/gt_alteryx_landing_prod/gt_mongodb_backup_2023_09_08/nohup.log &
+
+
+
+
+
+sudo mount -t cifs -o username=jnemuri,domain=hq.corp.viasat.com //10.109.32.4/gt_alteryx_public_share_prod /mnt/gt_alteryx_public_share_prod
+
+nohup mongodump --out=/mnt/gt_alteryx_public_share_prod/gt_mongodb_backup_2023_09_08 --username mongoAdmin --password 56QZR^8DqUwTS$ --host 10.107.3.9:27017 --authenticationDatabase "admin" &> /mnt/gt_alteryx_public_share_prod/gt_mongodb_backup_2023_09_08/nohup.log &
